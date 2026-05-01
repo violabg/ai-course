@@ -203,6 +203,7 @@ Key rules:
 - **Server component** — no `"use client"` directive needed
 - **`aria-hidden`, `select-none`, `font-mono text-xs leading-tight`, tinted background, vertical padding, and horizontal centering** are all applied by the cover wrapper in `ArticleCard` (`src/components/article-card.tsx`). Your component only needs to return the `<pre>` with the art — do **not** duplicate those wrapper styles. At time of writing the wrapper uses `bg-muted/30 dark:bg-black/50 -mx-6 -mt-6 mb-4 py-4 rounded-t-xl min-h-50 overflow-hidden font-mono text-xs leading-tight select-none` with `aria-hidden="true"`; if you need to sanity-check, open that file.
 - **Centered**: The `<pre>` must still carry `mx-auto w-fit` so the ASCII art is horizontally centered inside the wrapper.
+- **Height limit**: The ASCII art must be **max 11 rows total** (count every rendered line, including optional caption lines).
 - **No hardcoded colors** — use only Tailwind utility classes that map to the project's CSS custom properties (see Color palette below). Never inline hex or oklch values.
 
 ### Alignment (critical)
@@ -269,6 +270,7 @@ Before saving, verify:
 - [ ] Horizontal boundaries and baselines are consistent across related rows
 - [ ] Spacing is intentional (no accidental shifts caused by extra/missing spaces)
 - [ ] The `<pre>` has `mx-auto w-fit` for centering
+- [ ] The art uses **no more than 11 rows** in total
 - [ ] Art looks good at `text-xs` in a ~300px wide card
 - [ ] All colors use Tailwind classes (no inline `style` with hardcoded hex/oklch)
 - [ ] The component has no `"use client"` directive
