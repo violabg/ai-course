@@ -7,6 +7,52 @@ description: "Create a rich, custom-built presentation page for an MDX article. 
 
 Create a unique, high-value presentation page for an MDX article. Each presentation is a **custom static page** with its own React components, inline SVG graphics, animated flowcharts, and slide layouts designed specifically for that article's content.
 
+## Skill System Contract
+
+This is a **specialist module** inside the article workflow.
+
+### Responsibility
+
+- Build or update a presentation for one article slug
+- Keep slide structure coherent with article narrative
+
+### Required input
+
+```json
+{
+  "slug": "string",
+  "articlePath": "content/articles/<slug>.mdx",
+  "mode": "create | update",
+  "targetSlideCount": "8-15"
+}
+```
+
+### Structured output (handoff)
+
+```json
+{
+  "slug": "string",
+  "presentationPath": "src/app/articles/<slug>/presentazione",
+  "slidesCount": 10,
+  "slidesCreated": ["slide-01-title.tsx", "slide-02-flow.tsx"],
+  "slidesUpdated": ["slide-05-comparison.tsx"],
+  "requiresSpeechSync": true,
+  "requiresAsciiCoverCheck": true,
+  "notes": ["Plan approved before implementation"]
+}
+```
+
+### Human checkpoint
+
+- Mandatory: propose concept + slide plan, then wait for user confirmation before implementation.
+- Optional: if article scope changed heavily, ask whether to keep old visual style or redesign.
+
+### Boundaries
+
+- Do not generate narration text directly in this skill.
+- Do not generate ASCII cover components directly in this skill.
+- Do not rewrite the article body except tiny alignment edits requested by the user.
+
 The goal is to **add value beyond the article text** — not to summarize it into bullet points. A presentation should make complex ideas click through visual storytelling: flowcharts that reveal step by step, diagrams that build up, comparisons that animate side by side, code that highlights incrementally.
 
 ## Before You Start: Ask and Plan
@@ -270,7 +316,7 @@ A diagram that compiles is not a diagram that works. Always:
 
 ### Static Generation
 
-The page must work with Next.js static generation. Add `generateStaticParams` that returns the slug, and set `dynamicParams = false`. Look at how the article page does it in `src/app/articles/[slug]/page.tsx` for the pattern.
+The page must work with Next.js static generation. In this repo, each presentation route is a concrete slug folder (`src/app/articles/<slug>/presentazione/page.tsx`) with a local `SLUG` constant, `generateStaticParams()` returning `[{}]`, and `dynamicParams = false`.
 
 ### Connecting to the Article Page
 

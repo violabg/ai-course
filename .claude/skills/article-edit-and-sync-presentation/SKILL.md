@@ -7,17 +7,64 @@ description: "Edit an MDX article and then keep its presentation in sync. Use th
 
 When an MDX article needs editing, this skill handles both steps: apply the requested changes to the article, then update the presentation slides to stay in sync. The two steps are always done together — never edit the article without also updating the presentation (if one exists).
 
+## Skill System Contract
+
+This is a **specialist module** inside the article workflow.
+
+### Responsibility
+
+- Edit an existing MDX article
+- Sync the related presentation (only if it exists)
+
+### Required input
+
+```json
+{
+  "slug": "string",
+  "editRequest": "string",
+  "scope": "article-only | article+presentation"
+}
+```
+
+### Structured output (handoff)
+
+```json
+{
+  "slug": "string",
+  "articleUpdated": true,
+  "presentationFound": true,
+  "slidesAdded": ["slide-07-checkpoint.tsx"],
+  "slidesUpdated": ["slide-03-pipeline.tsx"],
+  "slidesRemoved": [],
+  "speechSynced": true,
+  "notes": ["Narrative order aligned to updated sections"]
+}
+```
+
+### Human checkpoint
+
+- Ask for clarification only if the requested edits are ambiguous or conflict with explicit constraints.
+- If the request is clear, execute end-to-end without extra approval loops.
+
+### Boundaries
+
+- Do not create a brand-new article.
+- Do not generate ASCII covers.
+- Do not generate standalone SVG image packs for the article body.
+
 ## Step 1: Identify the Article
 
 If the article slug isn't clear from context, ask the user which article to edit. Articles live in `content/articles/*.mdx`.
 
 Once you have the slug, check in parallel:
+
 - The MDX article (`content/articles/[slug].mdx`)
 - Whether a presentation exists at `src/app/articles/[slug]/presentazione/`
 
 ## Step 2: Edit the Article
 
 Read the full MDX article, then apply the changes the user requested. This may include:
+
 - Rewrites or condensations
 - Adding, removing, or restructuring sections
 - Fixing content, improving clarity, updating technical details
@@ -106,7 +153,7 @@ After any add or remove, update `slides.tsx` to reflect the new array. You don't
 After making changes, do a quick sanity check:
 
 - Does every slide in `slides.tsx` have a corresponding file?
-- Does every new or updated slide use `COLORS` from `slide-shared.tsx`?
+- Do new or updated slides reuse shared helpers/palette exported by `slide-shared.tsx` when available?
 - Does the slide order in `slides.tsx` match the article's narrative flow?
 - Are there any orphaned imports or missing imports in `slides.tsx`?
 

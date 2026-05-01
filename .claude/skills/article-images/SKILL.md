@@ -1,11 +1,58 @@
 ---
 name: article-images
-description: "Generate SVG images, diagrams, flowcharts, and cover art for MDX articles to improve reader comprehension and visual appeal. Use this skill whenever the user wants to add images to an article, generate a cover/poster image for the article card, create diagrams or flowcharts to explain concepts, improve visual presentation of content, or says things like 'add images', 'illustrate this article', 'make a diagram for', 'create a cover image'. Always use this skill when working with articles that have technical concepts that could benefit from visual explanation."
+description: "Generate SVG images, diagrams, flowcharts, and cover art assets for MDX articles to improve reader comprehension and visual appeal. Use this skill whenever the user wants to add images to an article, generate a cover/poster SVG asset, create diagrams or flowcharts to explain concepts, improve visual presentation of content, or says things like 'add images', 'illustrate this article', 'make a diagram for', 'create a cover image'. Always use this skill when working with articles that have technical concepts that could benefit from visual explanation."
 ---
 
 # Article Image Generator
 
 Generate SVG visuals for MDX articles in this Next.js project: cover images for article cards, and inline diagrams/flowcharts where they genuinely help readers understand the content.
+
+## Skill System Contract
+
+This is a **specialist module** inside the article workflow.
+
+### Responsibility
+
+- Generate article-specific SVG assets
+- Update the MDX article with image references and (when requested) `coverImage`
+
+### Required input
+
+```json
+{
+  "slug": "string",
+  "articlePath": "content/articles/<slug>.mdx",
+  "mode": "cover | inline | both",
+  "theme": "light | dark | auto"
+}
+```
+
+### Structured output (handoff)
+
+```json
+{
+  "slug": "string",
+  "generatedFiles": [
+    "public/images/articles/<slug>-cover.svg",
+    "public/images/articles/<slug>-pipeline.svg"
+  ],
+  "mdxUpdated": true,
+  "insertedImageRefs": ["/images/articles/<slug>-pipeline.svg"],
+  "coverImageValue": "<slug>-cover",
+  "notes": ["Alt text added for all inserted diagrams"]
+}
+```
+
+### Human checkpoint
+
+- If more than 3 inline diagrams are proposed, ask the user to approve the diagram list before generating all of them.
+- If the article is short and diagrams add little value, propose skipping inline assets.
+
+### Boundaries
+
+- Do not create/update presentation slides.
+- Do not create ASCII card cover components.
+- Do not restructure article sections unless needed to place images coherently.
 
 ## Project Context
 
@@ -21,29 +68,29 @@ SVG files served from `public/` are static and **cannot use CSS variables**. Use
 
 **Light mode palette** (default for SVGs):
 
-| CSS variable (globals.css) | Hex value | Use in SVGs |
-|---|---|---|
-| `--pres-bg` | `#ffffff` | Full-page background |
-| `--pres-bg-card` | `#f1f5f9` | SVG canvas background |
-| `--pres-text` | `#0f172a` | Primary text / headings |
-| `--pres-text-sub` | `#334155` | Secondary text |
-| `--pres-muted` | `#64748b` | Labels, captions, body text |
-| `--pres-accent` | `#7c3aed` | Primary accent (arrows, key nodes, highlights) |
-| `--pres-accent-dim` | `rgba(124, 58, 237, 0.12)` → `#ede9fe` | Highlighted box fill |
-| `--pres-border` | `#cbd5e1` | Box strokes, dividers |
-| `--pres-warning` | `#d97706` | Decision node stroke |
+| CSS variable (globals.css) | Hex value                              | Use in SVGs                                    |
+| -------------------------- | -------------------------------------- | ---------------------------------------------- |
+| `--pres-bg`                | `#ffffff`                              | Full-page background                           |
+| `--pres-bg-card`           | `#f1f5f9`                              | SVG canvas background                          |
+| `--pres-text`              | `#0f172a`                              | Primary text / headings                        |
+| `--pres-text-sub`          | `#334155`                              | Secondary text                                 |
+| `--pres-muted`             | `#64748b`                              | Labels, captions, body text                    |
+| `--pres-accent`            | `#7c3aed`                              | Primary accent (arrows, key nodes, highlights) |
+| `--pres-accent-dim`        | `rgba(124, 58, 237, 0.12)` → `#ede9fe` | Highlighted box fill                           |
+| `--pres-border`            | `#cbd5e1`                              | Box strokes, dividers                          |
+| `--pres-warning`           | `#d97706`                              | Decision node stroke                           |
 
 **Dark mode palette** (use when generating a dark-themed SVG):
 
-| CSS variable (globals.css) | Hex value | Use in SVGs |
-|---|---|---|
-| `--pres-bg` | `#0f172a` | Full-page / canvas background |
-| `--pres-bg-card` | `#0b1222` | Card/surface background |
-| `--pres-text` | `#e2e8f0` | Primary text |
-| `--pres-text-sub` | `#cbd5e1` | Secondary text |
-| `--pres-muted` | `#94a3b8` | Labels, captions |
-| `--pres-accent` | `#a78bfa` | Primary accent |
-| `--pres-border` | `#334155` | Box strokes, dividers |
+| CSS variable (globals.css) | Hex value | Use in SVGs                   |
+| -------------------------- | --------- | ----------------------------- |
+| `--pres-bg`                | `#0f172a` | Full-page / canvas background |
+| `--pres-bg-card`           | `#0b1222` | Card/surface background       |
+| `--pres-text`              | `#e2e8f0` | Primary text                  |
+| `--pres-text-sub`          | `#cbd5e1` | Secondary text                |
+| `--pres-muted`             | `#94a3b8` | Labels, captions              |
+| `--pres-accent`            | `#a78bfa` | Primary accent                |
+| `--pres-border`            | `#334155` | Box strokes, dividers         |
 
 When the project's `globals.css` changes (e.g. the `--primary` hue shifts), re-derive these hex values from the `--pres-*` tokens before generating new SVGs.
 
@@ -53,7 +100,7 @@ When the project's `globals.css` changes (e.g. the `--primary` hue shifts), re-d
 
 Read the full article. Identify:
 
-1. **Cover image need**: Every article benefits from a cover image — it creates visual identity for the article card. Generate one unless the user explicitly says not to.
+1. **Cover image need**: A cover SVG can be useful as a reusable asset for article branding and future surfaces. Generate one unless the user explicitly says not to, but remember this SVG is **not** what the article card currently renders.
 
 2. **Inline diagram opportunities**: Look for concepts that are genuinely clearer with a visual than with text alone. Good candidates:
    - Architecture or system diagrams ("how X talks to Y")
@@ -61,16 +108,17 @@ Read the full article. Identify:
    - Step-by-step flows or pipelines
    - Hierarchies, trees, or module structures
    - Decision flowcharts
-   
+
    Skip sections where text is self-sufficient. A table of numbers doesn't need a chart. A simple list of steps is often clearer as text. Only create images that make the reader's job easier.
 
 ### Step 2: Generate the cover SVG
 
-The cover image represents the article's identity. It appears on the article card and in the article header.
+The cover image represents the article's identity as a reusable visual asset. In the current codebase it does **not** automatically render in the card or article header.
 
 **Dimensions**: 800×450 (16:9)
 
 **Design principles**:
+
 - Use the project's purple primary accent (`--pres-accent` → `#7c3aed`) as the dominant accent
 - Dark background for impact (`--pres-bg` dark → `#0f172a`), or light background (`--pres-bg-card` → `#f1f5f9`)
 - Include the article's topic visually — an abstract representation, an icon, a pattern, or a minimal diagram that captures the subject
@@ -89,6 +137,7 @@ For each identified visual opportunity, generate an SVG file.
 **Dimensions**: 800×450 is a good default for horizontal diagrams. For tall flowcharts, 600×700 or similar is fine. Match the content's natural shape.
 
 **SVG style guide** — use the hex values from the Design Tokens table above (sourced from `globals.css`):
+
 - Background: `--pres-bg-card` (`#f1f5f9` light / `#0b1222` dark)
 - Boxes/cards: `#e2e8f0` fill (`--pres-border` lightened), `--pres-border` stroke (`#cbd5e1`), `rx="8"` for rounded corners
 - Primary accent: `--pres-accent` (`#7c3aed`) for highlighted elements, arrows, key nodes
@@ -114,6 +163,7 @@ The alt text should describe what the image shows, not just label it. "Struttura
 ### Step 4: Review what you generated
 
 After generating everything, do a quick self-check:
+
 - Does each image actually add value, or does it just restate what the text already says clearly?
 - Is the alt text descriptive and helpful?
 - Did you update the frontmatter for the cover image?
@@ -126,6 +176,7 @@ If an image you generated isn't adding value, remove it and the reference from t
 All hex values below correspond to the Design Tokens table (light mode). See that table when working in dark mode.
 
 ### Arrow marker definition (reuse at top of SVG's `<defs>`)
+
 ```svg
 <defs>
   <!-- --pres-muted (#94a3b8) for neutral arrows -->
@@ -140,6 +191,7 @@ All hex values below correspond to the Design Tokens table (light mode). See tha
 ```
 
 ### Standard box/node
+
 ```svg
 <!-- fill: --pres-border lightened (#e2e8f0), stroke: --pres-border (#cbd5e1), text: --pres-text-sub (#334155) -->
 <rect x="50" y="50" width="160" height="60" rx="8" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.5"/>
@@ -147,6 +199,7 @@ All hex values below correspond to the Design Tokens table (light mode). See tha
 ```
 
 ### Highlighted/primary box
+
 ```svg
 <!-- fill: --pres-accent-dim (#ede9fe), stroke: --pres-accent (#7c3aed), text: accent dark -->
 <rect x="50" y="50" width="160" height="60" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
@@ -154,18 +207,21 @@ All hex values below correspond to the Design Tokens table (light mode). See tha
 ```
 
 ### Connection line with arrow
+
 ```svg
 <!-- stroke: --pres-muted (#94a3b8) -->
 <line x1="210" y1="80" x2="280" y2="80" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
 ```
 
 ### Caption at bottom
+
 ```svg
 <!-- fill: --pres-muted (#64748b) -->
 <text x="400" y="430" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#64748b">Caption describing the diagram</text>
 ```
 
 ### Diamond (decision node)
+
 ```svg
 <!-- fill: warning dim, stroke: --pres-warning (#d97706) -->
 <polygon points="400,200 460,240 400,280 340,240" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>

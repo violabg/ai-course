@@ -7,6 +7,51 @@ description: "Add speech narration to an existing presentation. Drafts a `speech
 
 Add TTS (text-to-speech) narration to an existing presentation. Narration text lives in a `speech.json` alongside the slides; the presentation shell handles all of the UI (toggle, orb, first-time dialog, voice selector) automatically.
 
+## Skill System Contract
+
+This is a **specialist module** inside the article workflow.
+
+### Responsibility
+
+- Produce and refine `speech.json` for an existing presentation
+- Wire narration data into `PresentationShell`
+
+### Required input
+
+```json
+{
+  "slug": "string",
+  "presentationPath": "src/app/articles/<slug>/presentazione",
+  "slidesCount": 0,
+  "language": "it-IT"
+}
+```
+
+### Structured output (handoff)
+
+```json
+{
+  "slug": "string",
+  "speechFile": "src/app/articles/<slug>/presentazione/speech.json",
+  "slidesCount": 10,
+  "speechEntriesCount": 10,
+  "slidesTsxUpdated": true,
+  "voice": "it-IT",
+  "notes": ["Silent entries kept where visual-only slides were preferred"]
+}
+```
+
+### Human checkpoint
+
+- If narration tone or verbosity is unclear, ask once before final rewrite.
+- If slide count and speech entries differ, stop and fix alignment before completion.
+
+### Boundaries
+
+- Do not redesign slide visuals.
+- Do not create a presentation from scratch.
+- Do not modify unrelated article content.
+
 Uses the **Browser Web Speech API** (`window.speechSynthesis`) — no API key, no network call, no latency, works offline.
 
 ## Prerequisites

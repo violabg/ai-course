@@ -7,6 +7,48 @@ description: Generate a colored ASCII art React component as cover art for an ar
 
 Generate a React server component that renders colored ASCII art as a cover image for an article card. The art is topic-aware — it visually represents the article's subject using text characters, box-drawing glyphs, and color.
 
+## Skill System Contract
+
+This is a **specialist module** inside the article workflow.
+
+### Responsibility
+
+- Create or update one ASCII cover component for one article slug
+- Register the component in the cover registry
+
+### Required input
+
+```json
+{
+  "slug": "string",
+  "articlePath": "content/articles/<slug>.mdx",
+  "style": "illustrative | technical"
+}
+```
+
+### Structured output (handoff)
+
+```json
+{
+  "slug": "string",
+  "componentPath": "src/components/covers/<slug>.tsx",
+  "registryUpdated": true,
+  "styleUsed": "illustrative",
+  "verifiedInBrowser": true,
+  "notes": ["Theme checked in light and dark mode"]
+}
+```
+
+### Human checkpoint
+
+- Mandatory style selection checkpoint (illustrative vs technical) unless user already specified it.
+
+### Boundaries
+
+- Do not generate SVG files in `public/images/articles/`.
+- Do not update presentation slides.
+- Do not rewrite article text.
+
 ## Before you start
 
 If the user did not specify which article to generate a cover for, **ask them**. Do not generate a cover for a random article. List available articles from `content/articles/*.mdx` and let them choose.
@@ -89,14 +131,16 @@ Follow the guidelines for the chosen style below.
 
 This is a **drawing of rubber ducks** — it tells a story, has personality, and uses simple ASCII characters (`/`, `\`, `_`, `~`, `<`, `>`, parentheses) to create recognizable shapes. but fill free to get creative with the characters you use, if you need them to improve the illustration!
 
+Character selection is intentionally model-driven: choose the symbols that best express the topic and the chosen style. You are not restricted to a fixed character set when a different set improves clarity or aesthetics.
+
 **Design principles:**
 
 1. **Draw objects and characters, not diagrams** — a robot face, an animal, a tool, a scene with depth. Think "tiny illustration" not "flowchart"
-2. **Use basic ASCII characters creatively** — `/  \  _  |  (  )  <  >  ~  .  *  '  ^  =  -  o  O` are often enough to draw recognizable shapes. Box-drawing chars (`╭ ╮ │ ─`) are fine as accents but should not be the main visual
+2. **Use the most suitable characters for the concept** — basic ASCII is often enough, but you may freely use box-drawing or other Unicode symbols when they improve legibility, style, or topic fit
 3. **Tell a visual story** — the art should have a subject (a character, object, or scene) that relates to the article topic. A duck reviewing code is more engaging than a box labeled "review"
 4. **Add environmental details** — water ripples (`~~~~`), ground lines, shadows, motion lines, small decorative elements that give the scene life
 5. **Include a short caption** — a 1-3 word label in muted color at the bottom to anchor the meaning
-6. **Is compact** — roughly 20-30 columns wide, 7-11 rows tall (max 11 rows). It must fit inside a card without overwhelming the text content
+6. **Fits the card gracefully** — choose width/height dynamically based on the concept and detail level; avoid hard caps and optimize for visual balance without overwhelming article metadata
 7. **Has visual weight balance** — not too dense, not too sparse. Leave breathing room around the subject
 
 **Topic inspiration (illustrative):**
@@ -119,8 +163,8 @@ This is a **drawing of rubber ducks** — it tells a story, has personality, and
 **Design principles:**
 
 1. **Is visually recognizable** — someone should glance at it and get a sense of the article topic
-2. **Uses box-drawing and special characters** — `│ ─ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ╭ ╮ ╰ ╯ ═ ║ ╔ ╗ ╚ ╝ ▓ ░ ▒ █ ● ○ ◆ ◇ ► ◄ ▲ ▼ ⬡ ⚡ ⟡ ✦ ⊕ ⊗` and similar
-3. **Is compact** — roughly 20-28 columns wide, 8-11 rows tall (max 11 rows). It must fit inside a card without overwhelming the text content
+2. **Uses the character language that best communicates structure** — box-drawing and symbolic glyphs are encouraged, but not mandatory; pick what best matches the topic
+3. **Fits the card gracefully** — choose dimensions dynamically based on topic complexity and readability, rather than fixed width/height limits
 4. **Has visual weight balance** — not too dense, not too sparse
 
 **Topic inspiration (technical):**
@@ -165,12 +209,31 @@ Key rules:
 
 Vertical lines in box-drawing frames **must** align across all lines. The most common bug is misaligned closing `│` characters because the character count per line is inconsistent.
 
+### Precision standards (mandatory)
+
+Accuracy is a first-class requirement. Prioritize geometric correctness before stylistic flourish.
+
+- **Symmetry**: When the concept is symmetric (faces, icons, framed compositions), left/right structure must mirror correctly around a clear center axis.
+- **Horizontal alignment**: Rows that represent the same structural level must share consistent left and right boundaries.
+- **Spacing integrity**: Use deliberate spacing; avoid accidental double/trimmed spaces that shift the drawing.
+- **Baseline consistency**: Labels/captions should sit on intentional baselines and not visually drift between rows.
+- **Frame integrity**: Borders, corners, and connectors must join cleanly with no visual gaps.
+
+If there is a trade-off between decorative detail and structural accuracy, prefer structural accuracy.
+
 **How to verify alignment:**
 
 1. Pick a fixed width for every line inside a box frame (e.g., 26 characters)
 2. For each line, concatenate all string literals across all `<span>` elements
 3. Count the characters — every line with a left `│` and right `│` must be **exactly** the same total width
 4. Watch out for: multi-byte Unicode characters that look like 1 char but render wider, inconsistent spacing around labels of different lengths, and off-by-one from variable-width content
+
+**How to verify symmetry and spacing:**
+
+1. Identify the intended center axis (for symmetric compositions).
+2. Compare mirrored segments left vs right for equal visual depth and spacing.
+3. Ensure recurring columns (borders/connectors) appear at the same character positions across all relevant rows.
+4. Re-check after color-span splitting; formatting should not alter geometry.
 
 **Practical approach**: Write each line as a flat string first, count its length, verify all boxed lines match, and only then split into colored `<span>` elements.
 
@@ -202,6 +265,9 @@ Before saving, verify:
 - [ ] The art matches the **style the user chose** (illustrative or technical)
 - [ ] If using framed/boxed lines, every line has the exact same character width (count them!)
 - [ ] Every vertical line should be perfectly aligned with its counterparts on other lines
+- [ ] Symmetric subjects are truly symmetric around the intended axis
+- [ ] Horizontal boundaries and baselines are consistent across related rows
+- [ ] Spacing is intentional (no accidental shifts caused by extra/missing spaces)
 - [ ] The `<pre>` has `mx-auto w-fit` for centering
 - [ ] Art looks good at `text-xs` in a ~300px wide card
 - [ ] All colors use Tailwind classes (no inline `style` with hardcoded hex/oklch)
@@ -218,9 +284,13 @@ After writing the component and adding the registry entry, **always check the re
 2. Open the homepage or articles page in Chrome using the browser automation tools
 3. Find the article card with the new cover and visually verify:
    - The ASCII art renders correctly with proper alignment
-   - Colors look good in both light and dark themes (toggle the theme to check)
-   - The illustration is recognizable and conveys the article topic
-   - The art fits well within the card without overflow or awkward spacing
+
+- Symmetry (when expected) is preserved and visually balanced
+- Horizontal spacing and row baselines are consistent
+- Colors look good in both light and dark themes (toggle the theme to check)
+- The illustration is recognizable and conveys the article topic
+- The art fits well within the card without overflow or awkward spacing
+
 4. If anything looks off, fix the component and re-check in the browser
 
 **Do not consider the cover done until it has been visually verified in the browser.**
